@@ -11,9 +11,16 @@ var express = require('express')
   , path = require('path')
   , ejs = require('ejs')
   , session=require('express-session')
-  , SessionStore = require("session-mongoose")(express);
+  , favicon = require('serve-favicon')
+  , morgan = require('morgan')
+  , bodyParser = require('body-parser')
+  , cookieParser = require('cookie-parser')
+  , cookieSession = require('cookie-session')
+  , errorhandler = require('errorhandler')
+  // , SessionStore = require("session-mongoose")(express);
+  ,MongoStore=require('connect-mongo')(session);
 
-var store = new SessionStore({
+var store = new MongoStore({
     url: "mongodb://localhost/session",
     interval: 120000 // expiration check worker run interval in millisec (default: 60000)
 });
@@ -25,16 +32,22 @@ app.set('port', process.env.PORT || 3000);
 app.set('views', __dirname + '/views');
 app.engine('.html', ejs.__express);
 app.set('view engine', 'html');// app.set('view engine', 'ejs');
-app.use(express.favicon());
-app.use(express.logger('dev'));
-app.use(express.bodyParser());
-app.use(express.methodOverride());
-app.use(express.cookieParser()); 
-app.use(express.cookieSession({secret : 'blog.fens.me'}));
-app.use(express.session({
+app.set('trust proxy',1);
+app.use(favicon(__dirname + '/public/favicon.ico'));
+// app.use(express.logger('dev'));
+app.use(morgan('combined'));
+// app.use(express.bodyParser());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+// app.use(express.methodOverride());
+app.use(cookieParser()); 
+app.use(cookieSession({secret : 'blog.fens.me'}));
+app.use(session({
   	secret : 'blog.fens.me',
     store: store,
-    cookie: { maxAge: 900000 } // expire session in 15 min or 900 seconds
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: true,maxAge: 900000 } // expire session in 15 min or 900 seconds
 }));
 app.use(function(req, res, next){
   res.locals.user = req.session.user;
@@ -44,12 +57,12 @@ app.use(function(req, res, next){
   if (err) res.locals.message = '<div class="alert alert-error">' + err + '</div>';
   next();
 });
-app.use(app.router);
+// app.use(app.router);
 app.use(express.static(path.join(__dirname, 'public')));
 
 // development only
-if ('development' == app.get('env')) {
-  app.use(express.errorHandler());
+if (process.env.NODE_ENV === 'development') {
+  app.use(errorHandler());
 }
 
 //basic

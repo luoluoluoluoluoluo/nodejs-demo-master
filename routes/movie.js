@@ -40,8 +40,8 @@ exports.movieAdd = function(req, res) {
 
 exports.doMovieAdd = function(req, res) {
     console.log(req.body.content);
-    // var json = req.body.content;
-    var json = JSON.parse(req.body.content);
+    var json = req.body.content;
+    // var json = JSON.parse(req.body.content);
 
     if(json._id){//update
 
